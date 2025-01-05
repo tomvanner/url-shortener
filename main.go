@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"sync"
 )
 
@@ -26,7 +27,7 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&d)
 
 	// @todo: add url validation
-	if err != nil || d.LongURL == "" {
+	if err != nil || !isValidURL(d.LongURL) {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -73,6 +74,11 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, longURL, http.StatusMovedPermanently)
+}
+
+func isValidURL(urlString string) bool {
+	u, err := url.Parse(urlString)
+	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
 func main() {
