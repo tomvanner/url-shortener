@@ -8,14 +8,26 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
 var (
-	db *sql.DB
+	db     *sql.DB
+	config Config = Config{
+		Env:         getEnv("APP_ENV", "DEV"),
+		Port:        getEnv("APP_PORT", "8000"),
+		DatabaseDSN: getEnv("DATABASE_DSN", "urls.db"),
+	}
 )
+
+type Config struct {
+	Env         string
+	Port        string
+	DatabaseDSN string
+}
 
 type CreateData struct {
 	LongURL string `json:"longURL"`
@@ -23,7 +35,7 @@ type CreateData struct {
 
 func initDB() {
 	var err error
-	db, err = sql.Open("sqlite3", "./urls.db")
+	db, err = sql.Open("sqlite3", config.DatabaseDSN)
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
@@ -66,7 +78,7 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]string{
-		"short_url": "http://localhost:8000/" + slug,
+		"slug": slug,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -111,6 +123,15 @@ func isValidURL(urlString string) bool {
 	return err == nil && u.Scheme != "" && u.Host != ""
 }
 
+func getEnv(key string, fallback string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		value = fallback
+	}
+
+	return value
+}
+
 func main() {
 	initDB()
 	defer db.Close()
@@ -118,5 +139,5 @@ func main() {
 	http.HandleFunc("/", redirectHandler)
 	http.HandleFunc("/create", createShortURLHandler)
 
-	http.ListenAndServe(":8000", nil)
+	http.ListenAndServe(":"+config.Port, nil)
 }
