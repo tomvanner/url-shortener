@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  api:
+    build:
+      context: .
+    ports:
+      - "${APP_PORT}:${APP_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - ./database:/database

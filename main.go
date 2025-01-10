@@ -19,7 +19,7 @@ var (
 	config Config = Config{
 		Env:         getEnv("APP_ENV", "DEV"),
 		Port:        getEnv("APP_PORT", "8000"),
-		DatabaseDSN: getEnv("DATABASE_DSN", "urls.db"),
+		DatabaseDSN: getEnv("DB_PATH", "database/urls.db"),
 	}
 )
 
