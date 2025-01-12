@@ -2,7 +2,7 @@ include .env
 
 COMPOSE_FILE=docker-compose.yaml
 GO_BIN := bin/app
-MAIN_FILE := app.go
+MAIN_FILE := main.go
 
 default: db-up
 
@@ -31,10 +31,10 @@ down:
 
 .PHONY: app
 app:
-	$(GO_BIN): $(MAIN_FILE)
-		@echo "Building Go binary..."
-		go build -o $(GO_BIN) $(MAIN_FILE)
-		@echo "Go application built successfully: $(GO_BIN)"
+$(GO_BIN): $(MAIN_FILE)
+	@echo "Building Go binary..."
+	go build -o $(GO_BIN) $(MAIN_FILE)
+	@echo "Go application built successfully: $(GO_BIN)"
 
 .PHONY: clean
 clean:
