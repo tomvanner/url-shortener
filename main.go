@@ -9,10 +9,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
+
+const maxSlugRetries = 5
 
 var (
 	db     *sql.DB
@@ -62,15 +65,8 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slug := generateSlug()
+	slug, err := createSlug(d.LongURL)
 
-	// @todo: check if slug already exists
-	_, err = db.Exec(
-		"INSERT INTO urls (long_url, slug, created) VALUES ($1, $2, $3)",
-		d.LongURL,
-		slug,
-		time.Now().Format(time.RFC3339),
-	)
 	if err != nil {
 		log.Fatal(err)
 		http.Error(w, "Failed to create short URL", http.StatusInternalServerError)
@@ -83,6 +79,34 @@ func createShortURLHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+func createSlug(longUrl string) (string, error) {
+	var (
+		slug string
+		err  error
+	)
+
+	for i := 0; i < maxSlugRetries; i++ {
+		slug = generateSlug()
+		_, err = db.Exec(
+			"INSERT INTO urls (long_url, slug, created) VALUES ($1, $2, $3)",
+			longUrl,
+			slug,
+			time.Now().Format(time.RFC3339),
+		)
+
+		if err == nil {
+			break
+		}
+
+		if strings.Contains(err.Error(), "unique constraint") {
+			log.Printf("Collision for '%s', retrying...", slug)
+			continue
+		}
+	}
+
+	return slug, err
 }
 
 func generateSlug() string {
