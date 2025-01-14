@@ -4,7 +4,7 @@ COMPOSE_FILE=docker-compose.yaml
 GO_BIN := bin/app
 MAIN_FILE := main.go
 
-default: db-up
+default: build
 
 .PHONY: db
 db: $(DB_PATH)
@@ -17,12 +17,15 @@ $(DB_PATH): $(SCHEMA_PATH)
 		echo "Database already exists at $@, skipping creation"; \
 	fi
 
+.PHONY: build
+build: db
+	@echo "Building and docker containers"
+	docker-compose -f $(COMPOSE_FILE) build
+
 .PHONY: up
 up:
-	@echo "Building and starting docker containers"
-	docker-compose -f $(COMPOSE_FILE) up --build
-
-
+	@echo "Starting docker containers"
+	docker-compose -f $(COMPOSE_FILE) up -d
 
 .PHONY: down
 down:
@@ -40,7 +43,5 @@ $(GO_BIN): $(MAIN_FILE)
 clean:
 	@echo "Cleaning up..."
 	rm -f $(DB_PATH)
+	rm -f $(GO_BIN)
 	@echo "Clean up complete"
-
-.PHONY: db-up
-db-up: db up
